@@ -1,0 +1,218 @@
+CERT:
+openssl genpkey -algorithm RSA -out rootCA.key
+openssl req -new -x509 -key rootCA.key -out rootCA.crt
+openssl genpkey -algorithm RSA -out client1.key
+openssl req -new -key client1.key -out client1.csr
+openssl x509 -req -in client1.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out client1.crt
+
+
+TIMEZONE: 
+Timedatectl 
+Timedatectl list-timeoznes
+Timedatectl set-timezone
+
+HOSTNAME: 
+Hostnamectl set-hostname <nazwa_hostname>
+nano /etc/hosts
+
+SSH:
+apt install openssh-server
+nano /etc/ssh/sshd_config
+PermitRootLogin yes
+sudo systemctl restart ssh
+
+
+FIREWALLD:
+firewall-cmd --add-forwarding
+firewall-cmd --add-masquerade
+firewall-cmd --get-services -> wyświetli dostepne serwisy 
+firewall-cmd --add-service=<nazwa serwisu>
+firewall-cmd --reload
+
+
+LDAP:
+/sbin/slapcat -b 'cn=config'| less
+
+ldapsearch -H ldap://192.168.10.1 -x -D 'cn=admin,dc=firmatpolska,dc=pl' -w Passw0rd! -b "dc=firmatpolska,dc=pl"
+
+Apt install slapd 
+dpgk-reconfigure slapd 
+ldapadd -x -D 'cn=admin,dc=firmatpolska,dc=pl' -W -f users_group_os.ldif
+
+
+LDAP ldif:
+dn: uid=johndoe,ou=users,dc=example,dc=com
+changetype: modify
+replace: <zmienna>
+<zmienna>: <nowa wartość>
+description: Nowa opisowa wartość dla użytkownika John Doe
+
+
+LDAP ldif:
+#Organizational Unit
+dn: ou=Network Admins, dc=firmatpolska, dc=pl
+objectClass: organizationalUnit
+ou: Network Admins
+
+dn: ou=Management, dc=firmatpolska, dc=pl
+objectClass: organizationalUnit
+ou: Management
+
+
+#Groups
+dn: cn=admins, ou=Network Admins, dc=firmatpolska, dc=pl
+objectClass: posixGroup
+cn: admins 
+gidNumber: 1000
+
+dn: cn=superusers, ou=Network Admins, dc=firmatpolska, dc=pl
+objectClass: posixGroup
+cn: superusers 
+gidNumber: 1001
+
+dn: cn=management, ou=Management, dc=firmatpolska, dc=pl
+objectClass: posixGroup
+cn: management 
+gidNumber: 1002
+
+
+#Users
+dn: cn=admin, ou=Network Admins, dc=firmatpolska, dc=pl
+objectClass: posixAccount
+objectClass: inetOrgPerson
+mail: admin@firmatpolska.pl
+cn: admin 
+sn: admin
+uid: admin
+uidNumber: 1000
+gidNumber: 1000
+homeDirectory: /share/users/admin
+loginShell: /bin/bash
+userPassword: Passw0rd!
+
+dn: cn=maja, ou=Management, dc=firmatpolska, dc=pl
+objectClass: posixAccount
+objectClass: inetOrgPerson
+mail: maja@firmatpolska.pl
+cn: maja 
+sn: maja
+uid: maja
+uidNumber: 1002
+gidNumber: 1002
+homeDirectory: /share/users/maja
+loginShell: /bin/bash
+userPassword: Passw0rd!
+
+dn: cn=jan, ou=Network Admins, dc=firmatpolska, dc=pl
+objectClass: posixAccount
+objectClass: inetOrgPerson
+mail: jan@firmatpolska.pl
+cn: jan 
+sn: jan
+uid: jan
+uidNumber: 1001
+gidNumber: 1001
+homeDirectory: /share/users/jan
+loginShell: /bin/bash
+userPassword: Passw0rd!
+
+
+LDAP cache: 
+ibpam-ccreds 
+
+LDAP client: 
+Libnss-ldapd
+Libpam-ldapd
+Ldap-utils
+
+Dpkg-reconfigure nslcd
+Dpkg-reconfigure nscd
+
+
+RAID:
+pvcreate -v /dev/<podlączony dysk>
+vgcreate -v <nazwa dla grupy> <ścieżka do dysk do dodania1> <ścieżka do dysk do dodania 2> <itd….>
+lvcreate -v -i <liczba stripów> -m <liczba kopii dla każdej kopii mirror> -L <rozmiar, pewnie z literą G> -n <nazwa dla voluminu logicznego> <nazwa grupy>
+mkfs.<np.. ext4> /dev/<dalsza ścieżka do RAID, np.. raid10/raid10_lv>
+mount </dev/raid10/raid10_lv> </share/raid_share> 
+/etc/fstab
+
+
+DHCP:
+Apt install isc-dhcp-server
+Wejdz do pliku /etc/dhcp/dhcpd.conf. 
+Weź sobie przykładowy subnet i nadaj mu:
+a. Adresację
+b. Option routers (gateway)
+c. Option domain-name-servers (dns)
+
+W odkomentuj "authoritative" (ozn. żeby inne DHCP poszły w pizdu)
+Ustaw option domain-name "firmatpolska.pl"
+Ustaw domain-name-servers <adres serwera dns>
+
+Konfiguracja interfejsu, są dwie opcje: 
+a. Dodać w pliku /etc/default/isc-dhcp-server interfejs
+b. Dodać w wyżej zdefiniowanym subnecie frazę "interface <nazwa interfejsu>"
+
+
+DNS:
+Apt install bind9
+Kopiujemy plik named.conf.default-zones do named.conf.local
+Podmieniamy wartości domyślne konfiguracji forward na firmatpolska.pl, a reverse na adres IP (w tym przypadku 168.192)
+Utwórz sobie folder zones 
+Do tego folderu przekopiuj sobie template db.0 albo db.127 i pododawaj wpisy DNS forward i reverse. 
+
+
+DDNS:
+	dns:
+nano named.conf.local
+"include /etc/dhcp/<folder z kluczem>";
+"allow-update { <nazwa klucza> }"
+/var/cache/default/bind/forward;", "file /var/cache/default/bind/reverse;"
+nano /var/cache/default/bind
+ln -s  /etc/bind/zones/forward
+ln -s  /etc/bind/zones/reverse
+	dhcp:
+zones w dhcp.conf
+include /etc/dhcp/<folder z kluczem>
+Zone firmatpolska.pl. {
+Primary <adres ip serwera dns>;
+Key <nazwa klucza>;
+}
+
+SNMP:
+nano /etc/snmp/snmpd.config
+agentaddress udp:161
+rocommunity public 0.0.0.0/0
+
+nc -z -v -u localhost 161
+
+
+RSYSLOG:
+$template remote-incoming-logs, "/logs/dump.log"
+$template remote-dhcp-logs, "/logs/dhcp.log"
+$template remote-mail-logs, "/logs/mail.log"
+
+if $programname == 'dhcpd' or $programname == 'isc-dhcp-server' or $msg contain>
+& stop
+
+mail.* ?remote-mail-logs
+& stop
+
+*.* ?remote-incoming-logs
+
+
+POSTFIX: 
+/etc/postfix/main.cf
+
+DOVECOT-IMAPD:
+nano /etc/dovecot/dovecot.conf
+Odkomentuj "listen = *, ::"
+/etc/dovecot/conf.d/10-ssl.
+
+
+
+
+
+
+
