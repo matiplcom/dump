@@ -163,3 +163,11 @@ interface Tunnel 10
 
 - STATIC ROUTE
 route to_isp 62.32.147.2 255.255.255.0 10.10.10.1
+
+
+
+# Debig VPN
+Sh crypto isakmp policy 
+Sh crypto isakmp key
+Sh crypto isakmp sa
+Sh crypto isakmp peers
