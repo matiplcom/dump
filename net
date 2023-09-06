@@ -1,0 +1,165 @@
+#HSRV
+Interface <interfejs>
+Standby 1 
+Standby 1 ip <virtual gateway ip address>
+Standby 1 priotity <wyższy numer priorytetu>
+Standby 1 preempt
+
+
+# Standby - required authentication 
+int <interfejs> 
+Standby 1 authentication text <haslo>   LUB   Standby 1 authentication md5 key-string 0 <haslo> - pierwsze to plain text drugie to z szyfrowanie md5 (0 jest oznaczeniem numerycznym plaintext)
+
+# trunk
+	• interface <numer interfejsu>
+	• switchport trunk encapsulation dot1q
+	• switchport mode trunk
+
+
+# VTP 
+Enable 
+Conf t
+Vtp mode client
+Vtp domain <nazwa domeny>
+Vtp version 3
+vtp primary #dodaj jezeli konfigurujesz vtp server
+end
+
+
+# konfigurowanie części warszawskiej 
+	1. Wszystkie interfejsy które będą pracowały w warstwie 2 ustawiamy jako switch port 
+(te, które są poniżej DIST1 i DIST2)
+	2. Konfigurujemy trunk na switchach
+		a. Interface <konkretny interfejs>
+		b. Musimy ustawić sposób do1q -> switchport trunk encapsulation dot1q 
+		c. Trunk -> switchport mode trunk
+		d. (można też sobie filtrowa co ma latac po danym trunku -> switchport trunk allow vlan <numer>, a każdy kolejny dodajemy poprzez switchport trunk allow vlan add <numer>)
+	3. Skonfiguruj VTP na ACC1, ACC2, DIST2
+		a. Vtp version 3
+		b. Vtp mode client
+		c. Vtp domain <nazwa domeny>
+	4. Konfiguruj VTP na DIST1 
+		a. Vtp version 3
+		b. Vtp mode server
+		c. Vtp domain <nazwa domeny>
+		d. Vtp primary # dzieki temu jest serwerem glownym (należy wydać komendę w trybie privilage mode )
+	5. Ustaw ip address dla całego vlan'u
+		a. Wejdz na DIST1
+		b. Interface vlan <numer vlan'u>
+		c. Ip add <adres ip dla vlan'u> <maska>
+		d. No shutdown
+	6. Ustaw root bridge na DIST1 
+
+
+# spanning-tree 
+spanning-tree mode rapid-pvst
+spanning-tree vlan <numer_vlanu> priority 4096 #priority to wielokrotność 4096, im niższa wartośc tym wyższy priorytet
+
+
+# spanning-tree portfast
+# ustanawiamy na porcie, do którego jest przyłączony host, a nie żaden inny switch 
+spanning-tree portfast edge 
+
+
+# BPDU guard 
+# uruchamiamy na tych portach, na któych nie spodziewamy się otrzymać BPDU
+# tj. porty gdzie nie podłączone sa switche (np. hosty, serwery, itp.)
+int <interfejs>
+spanning-tree bpduguard enable
+
+
+# ASA - interfejs
+	1. Interface <interfejs> 
+	2. nameif <nawza własna dla interfejsu>
+	3. Ip add <adres> <maska>
+	4. Security-level 100
+  5. Same-security-traffic permit inter-interface
+
+
+# agregacja łaczy - LACP
+	1. Int <interfejs1>
+	2. Channel-group 1 mode active
+	3. Exit
+	4. Int <interfejs2>
+	5. Channel-group 1 mode active
+	6. Exit 
+
+
+# BGP 
+Router bgp 300 
+Neighbour <adres ip sąsiada> remote-as 100 (ten numerek przypisany isp)
+Do sh ip bgp sum
+
+# zabezpieczenie BGP 
+neighbor <adres sąsiada> password 0 <haslo>
+
+
+# iBGP 
+	1. Utwórz Loopback 100 na obu routerach 
+	2. Dodaj jakis adres sieci oraz maską 255.255.255.255
+	3. Router bgp 200
+	4. Neighbour <adres loopback sąsiada> remote-as 200
+	5. Neighbour <adres loopback sąsiada> update-source Loopback 100
+	6. Neighbour <adres loopback sąsiada> next-hop-self
+  7. Skonfigurowac statyczny ip route do loopbacków sąsiadów, np.. 
+    z krakowa do warszawy 
+
+
+# Keychain 
+Key-chain PEK 
+Key 0 
+Key-string <hasło> 
+send-lifetime <godzina> <data> infinity 
+
+
+# NTP 
+ntp server address isp < adres loopback isp>
+
+
+# NAT 
+int <interfejs> 
+ip nat inside 
+
+int <interfejs> 
+ip nat outside
+
+***Access lista***
+access-list 100 permit ip 172.16.0.0 0.0.255.255 (odwrócona maska) any (any oznacza ze do gdziekolwiek)
+ip nat inside source list 100 interface <interfejs> overload 
+
+***Ustanawiamy nat statyczny***
+ip nat inside source static tcp 172.16.40.4 80 18.31.192.3 80 (adres publiczny lodz2) - kiedy siec publiczna rozpoczyna
+
+
+# VPN
+***FAZA 1***
+- ROUTER
+KLUCZ: crypto keyring KEYRING  
+  local-address 10.0.0.1
+  pre-shared-key address 10.0.1.1 key test
+POLICY: crypto isakamp policy 1
+PROFIL: crypto isakmp profile TUNEL
+   keyring KEYRING
+   match identity address 10.0.1.1 255.255.255.255 
+   local-address 10.0.0.1
+
+***FAZA 2***
+- ROUTER
+X TRANSFORMSET: crypto ipsec transform-set TS esp-aes esp-sha-hmac
+   Mode tunnel
+PROFIL: crypto ipsec profile TUNEL2
+   set transform-set TS
+   set pfs group14
+ 
+TUNNEL #skopiowane a ASY - niedokońca konfiguracja może się zgadzać 
+interface Tunnel 10 
+  Nameif to_asa #prawdopodobnie śmieć
+  No shut
+  ip add 10.10.10.2 255.255.255.252
+  tunnel destination 65.32.147.2
+  tunnel source interface to_isp
+  tunnel mode ipsec ipv4
+  tunnel protection ipsec profile TUNEL2 
+
+- STATIC ROUTE
+route to_isp 62.32.147.2 255.255.255.0 10.10.10.1
