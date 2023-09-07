@@ -1,0 +1,37 @@
+OSOBNY PLIK W FOLDERZE OBOK PLAYBOOKA
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Linux - Because there is more than one way.</title>
+</head>
+<body>
+    <h1>Linux - Because there is more than one way.</h1>
+    <p>This site was served by {{ ansible_hostname }}</p>
+</body>
+</html>
+
+PLAYBOOK
+---
+- name: Configure Web Servers
+  hosts: backend
+  become: yes  # Use sudo for privilege escalation
+  
+  tasks:
+    - name: Install Apache Web Server
+      apt:
+        name: apache2
+        state: present
+      become: yes
+
+    - name: Create HTML File with Custom Content
+      template:
+        src: custom_content.html.j2
+        dest: /var/www/html/index.html
+      become: yes
+
+    - name: Start Apache Service
+      service:
+        name: apache2
+        state: started
+      become: yes
