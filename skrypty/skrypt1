@@ -1,7 +1,7 @@
 HOSTS
 [all:vars]
 your_timezone=Europe/Paris
-Your_hostname=andrzej
+Your_hostname=web1
 
 
 
