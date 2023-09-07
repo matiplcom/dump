@@ -24,15 +24,9 @@
               chain input {
                   type filter hook input priority 0;
                   
-                  # Allow SSH traffic from iaac-mgmt
-                  ip saddr 10.10.10.1 tcp dport ssh accept
-                  
-                  # Allow minimal traffic for services to work
-                  # Example: Allow DNS traffic
-                  ip saddr 0.0.0.0/0 udp dport 53 accept
-
-                  # Drop all other incoming packets by default
-                  drop
+                  ip saddr 10.10.10.1 tcp dport ssh accept                          # Allow SSH traffic from iaac-mgmt
+                  ip saddr 0.0.0.0/0 udp dport 53 accept                            # Allow minimal traffic for services to work# Example: Allow DNS traffic
+                  drop                                                              # Drop all other incoming packets by default
               }
           }
         dest: /etc/nftables.conf
@@ -42,7 +36,7 @@
       nftables_rule:
         table: filter
         chain: input
-        rule: 'ip saddr 10.10.10.1 tcp dport ssh accept'  # Replace 10.10.10.1 with the actual IP
+        rule: 'ip saddr 10.10.10.1 tcp dport ssh accept'                        # Replace 10.10.10.1 with the actual IP
 
   handlers:
     - name: Reload nftables
