@@ -1,0 +1,3 @@
+Skrypty 1-3 napewno chcemy zrobić - Sprawdź je proszę i nanieś ew poprawki plus info o zmianie tutaj
+
+Skrypty 4-5 eksperymentalne niesprawdzone z GPT jakby zostal czas...
