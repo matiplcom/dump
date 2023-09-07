@@ -15,7 +15,7 @@ PLAYBOOK
 ---
 - name: Configure Web Servers
   hosts: backend
-  become: yes  # Use sudo for privilege escalation
+  become: yes 
   
   tasks:
     - name: Install Apache Web Server
@@ -26,7 +26,7 @@ PLAYBOOK
 
     - name: Create HTML File with Custom Content
       template:
-        src: custom_content.html.j2
+        src: custom_content.html.j2       #HTML WYZEJ
         dest: /var/www/html/index.html
       become: yes
 
