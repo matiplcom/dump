@@ -131,8 +131,8 @@ Dpkg-reconfigure nscd
 
 RAID:
 pvcreate -v /dev/<podlączony dysk>
-vgcreate -v <nazwa dla grupy> <ścieżka do dysk do dodania1> <ścieżka do dysk do dodania 2> <itd….>
-lvcreate -v -i <liczba stripów> -m <liczba kopii dla każdej kopii mirror> -L <rozmiar, pewnie z literą G> -n <nazwa dla voluminu logicznego> <nazwa grupy>
+vgcreate -v <nazwa dla grupy> </dev/sd[b-e]> /dev/sd[b-e] <ścieżka do dysk do dodania 2> <itd….>
+lvcreate -v -i <2> -m <1> -L 4G -n <nazwa dla voluminu logicznego> <nazwa grupy>
 mkfs.<np.. ext4> /dev/<dalsza ścieżka do RAID, np.. raid10/raid10_lv>
 mount </dev/raid10/raid10_lv> </share/raid_share> 
 /etc/fstab
