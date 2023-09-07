@@ -113,7 +113,7 @@ send-lifetime <godzina> <data> infinity
 
 
 # NTP 
-ntp server address isp < adres loopback isp>
+ntp server < adres loopback isp>
 
 
 # NAT 
