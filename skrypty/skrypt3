@@ -16,6 +16,7 @@ PLAYBOOK
 - name: Configure Web Servers
   hosts: backend
   become: yes 
+  remote_user: ansible
   
   tasks:
     - name: Install Apache Web Server
