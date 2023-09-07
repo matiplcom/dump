@@ -1,0 +1,89 @@
+---
+- name: Configure HAProxy and Keepalived for Load Balancing
+  hosts: frontend
+  become: true
+  vars:
+    website_domain: www.firmatpolska.pl
+    certificate_path: /path/to/your/certificate.crt
+    certificate_key_path: /path/to/your/certificate.key
+    ca_certificate_path: /path/to/your/ca_certificate.crt
+    ftp_servers:
+      - ftp_server1_ip
+      - ftp_server2_ip
+    web_servers:
+      - web_server1_ip
+      - web_server2_ip
+    haproxy_stats_password: your_stats_password
+    vrrp_password: your_vrrp_password
+  tasks:
+    - name: Install HAProxy and VRRP
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - haproxy
+        - keepalived
+
+    - name: Copy SSL Certificate and Key
+      copy:
+        src: "{{ item }}"
+        dest: /etc/ssl/private/
+      with_items:
+        - "{{ certificate_path }}"
+        - "{{ certificate_key_path }}"
+
+    - name: Copy CA Certificate
+      copy:
+        src: "{{ ca_certificate_path }}"
+        dest: /usr/local/share/ca-certificates/
+      notify: Update CA Certificates
+
+    - name: Update CA Certificates
+      command: update-ca-certificates
+      async: 600
+      poll: 0
+      become: yes
+      become_user: root
+
+    - name: Configure HAProxy
+      template:
+        src: haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+      notify: Restart HAProxy
+
+    - name: Start HAProxy Service
+      service:
+        name: haproxy
+        state: started
+
+    - name: Enable HAProxy on Boot
+      service:
+        name: haproxy
+        enabled: yes
+
+    - name: Configure VRRP
+      template:
+        src: keepalived.conf.j2
+        dest: /etc/keepalived/keepalived.conf
+      notify: Restart Keepalived
+
+    - name: Start Keepalived Service
+      service:
+        name: keepalived
+        state: started
+
+    - name: Enable Keepalived on Boot
+      service:
+        name: keepalived
+        enabled: yes
+
+  handlers:
+    - name: Restart HAProxy
+      service:
+        name: haproxy
+        state: restarted
+
+    - name: Restart Keepalived
+      service:
+        name: keepalived
+        state: restarted
