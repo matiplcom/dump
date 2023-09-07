@@ -1,0 +1,51 @@
+---
+- name: Configure nftables firewall on Debian VMs
+  hosts: "all"
+  become: yes
+
+  tasks:
+    - name: Install nftables package
+      apt:
+        name: nftables
+        state: present
+
+    - name: Ensure nftables service is enabled and started
+      service:
+        name: nftables
+        state: started
+        enabled: yes
+
+    - name: Create nftables rules file
+      copy:
+        content: |
+          #!/usr/sbin/nft -f
+
+          table ip filter {
+              chain input {
+                  type filter hook input priority 0;
+                  
+                  # Allow SSH traffic from iaac-mgmt
+                  ip saddr 10.10.10.1 tcp dport ssh accept
+                  
+                  # Allow minimal traffic for services to work
+                  # Example: Allow DNS traffic
+                  ip saddr 0.0.0.0/0 udp dport 53 accept
+
+                  # Drop all other incoming packets by default
+                  drop
+              }
+          }
+        dest: /etc/nftables.conf
+      notify: Reload nftables
+
+    - name: Allow SSH traffic from iaac-mgmt
+      nftables_rule:
+        table: filter
+        chain: input
+        rule: 'ip saddr 10.10.10.1 tcp dport ssh accept'  # Replace 10.10.10.1 with the actual IP
+
+  handlers:
+    - name: Reload nftables
+      service:
+        name: nftables
+        state: reloaded
