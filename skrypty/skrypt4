@@ -1,0 +1,53 @@
+TOTALNIE Z GPT:
+........................
+
+---
+- name: Configure FTP Service
+  hosts: frontend_servers
+  become: yes
+  tasks:
+    - name: Install vsftpd
+      apt:
+        name: vsftpd
+        state: present
+
+    - name: Configure vsftpd.conf
+      lineinfile:
+        path: /etc/vsftpd.conf
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: '^anonymous_enable=', line: 'anonymous_enable=NO' }
+        - { regexp: '^local_enable=', line: 'local_enable=YES' }
+        - { regexp: '^write_enable=', line: 'write_enable=YES' }
+        - { regexp: '^chroot_local_user=', line: 'chroot_local_user=YES' }
+        - { regexp: '^allow_writeable_chroot=', line: 'allow_writeable_chroot=YES' }
+        - { regexp: '^ssl_enable=', line: 'ssl_enable=YES' }
+        - { regexp: '^ssl_cert_file=', line: 'ssl_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem' }
+        - { regexp: '^ssl_key_file=', line: 'ssl_key_file=/etc/ssl/private/ssl-cert-snakeoil.key' }
+      notify: Restart vsftpd
+
+    - name: Create FTP user 'webmaster'
+      user:
+        name: webmaster
+        shell: /bin/false
+        home: /var/www/ftp/home
+        createhome: yes
+
+    - name: Set FTP user password
+      shell: echo "webmaster_password" | passwd --stdin webmaster
+      notify: Restart vsftpd
+
+    - name: Create FTP home directory
+      file:
+        path: /var/www/ftp/home
+        owner: webmaster
+        group: www-data
+        mode: '0755'
+        state: directory
+
+  handlers:
+    - name: Restart vsftpd
+      service:
+        name: vsftpd
+        state: restarted
