@@ -1,0 +1,19 @@
+HOSTS
+[all:vars]
+your_timezone=Europe/Paris
+Your_hostname=andrzej
+
+
+
+PLAYBOOK
+- name: "Server configuration"
+  hosts: "all"
+
+  tasks:
+    - name: "Configure hostname"
+      ansible.builtin.hostname:
+        name: {{ your_hostname }}
+      become: true
+
+  -name: "timezone"
+  ansible.builtin.command: timedatectl set-timezone Europe/Paris
