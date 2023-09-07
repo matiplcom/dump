@@ -8,6 +8,7 @@ Your_hostname=andrzej
 PLAYBOOK
 - name: "Server configuration"
   hosts: "all"
+  remote_user: ansible 
 
   tasks:
     - name: "Configure hostname"
