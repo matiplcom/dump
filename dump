@@ -211,6 +211,10 @@ Odkomentuj "listen = *, ::"
 /etc/dovecot/conf.d/10-ssl.
 
 
+Apache2
+Utwórz soft link pliku /mods-available/ssl.load do folderu /site-enabled
+
+
 
 
 
