@@ -204,6 +204,8 @@ mail.* ?remote-mail-logs
 
 POSTFIX: 
 /etc/postfix/main.cf
+Odkomentuj 4 linie po "submission inet n"
+
 
 DOVECOT-IMAPD:
 nano /etc/dovecot/dovecot.conf
@@ -215,6 +217,20 @@ Apache2
 Utwórz soft link pliku /mods-available/ssl.load do folderu /site-enabled
 
 
+Logowanie uzytkownikami LDAP
+
+W pliku /etc/pam.d/local odkomentuj linie "account required pam_access.so
+
+W pliku /etc/gdm-password
+Dodaj na samym początku: 
+Account required pam_access.so
+
+W pliku /etc/security/access.conf na końcu pliku dodaj : 
++:root:ALL
++:admins:ALL
++:superusers:ALL
++:management:ALL
+-:ALL:ALL
 
 
 
